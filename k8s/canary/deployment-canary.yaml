@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colordeploy-canary
+  namespace: colordeploy
+  labels:
+    app: colordeploy-canary
+    track: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: colordeploy-canary
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: colordeploy-canary
+        track: canary
+    spec:
+      containers:
+        - name: app
+          image: colordeploy-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DEPLOY_COLOR
+              value: "canary"
+            - name: APP_VERSION
+              value: "v2.0.0-canary"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: METRICS_ENABLED
+              value: "true"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10

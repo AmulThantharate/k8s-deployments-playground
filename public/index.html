@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K8s Deployments Playground</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-cubes-stacked"></i>
+        </div>
+        <div class="brand-text">
+          <h1>K8s Deploy</h1>
+          <span>Playground</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-tab="dashboard-tab">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-tab="simulator-tab">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Traffic Tester</span>
+        </button>
+        <button class="nav-btn" data-tab="playground-tab">
+          <i class="fa-solid fa-gamepad"></i>
+          <span>K8s Playground</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="simulation-toggle-container">
+          <span class="label">Simulate K8s (Local)</span>
+          <label class="switch">
+            <input type="checkbox" id="simModeToggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="system-status">
+          <div class="pulse-indicator offline" id="redisPulse"></div>
+          <span class="status-text" id="redisStatusText">Redis: Connecting...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Premium Top Bar Status -->
+      <header class="top-bar">
+        <div class="bar-title">
+          <h2 id="pageTitle">Cluster Telemetry</h2>
+          <p id="pageSubtitle">Real-time container performance analytics</p>
+        </div>
+        <div class="telemetry-pill-container">
+          <div class="telemetry-pill" id="pillActiveColor">
+            <span class="pill-label">DEPLOY COLOR</span>
+            <span class="pill-value" id="valDeployColor">loading...</span>
+          </div>
+          <div class="telemetry-pill">
+            <span class="pill-label">VERSION</span>
+            <span class="pill-value" id="valVersion">loading...</span>
+          </div>
+          <div class="telemetry-pill hidden-mobile">
+            <span class="pill-label">POD HOST</span>
+            <span class="pill-value" id="valPodName">loading...</span>
+          </div>
+          <div class="live-indicator-pill">
+            <div class="pulse-indicator online"></div>
+            <span>LIVE</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD -->
+      <section class="tab-panel active" id="dashboard-tab">
+        <div class="metrics-grid">
+          <!-- Card 1: Active Deployment Color -->
+          <div class="metric-card glow-card" id="colorMetricCard">
+            <div class="card-icon">
+              <i class="fa-solid fa-palette"></i>
+            </div>
+            <div class="card-content">
+              <h3>Active Environment</h3>
+              <div class="large-value" id="dashColor">Detecting...</div>
+              <p class="card-detail" id="dashColorDesc">Connecting to active deployment</p>
+            </div>
+          </div>
+
+          <!-- Card 2: App Version -->
+          <div class="metric-card">
+            <div class="card-icon blue-glow">
+              <i class="fa-solid fa-code-branch"></i>
+            </div>
+            <div class="card-content">
+              <h3>App Version</h3>
+              <div class="large-value" id="dashVersion">v0.0.0</div>
+              <p class="card-detail" id="dashPod">Pod: unknown</p>
+            </div>
+          </div>
+
+          <!-- Card 3: System Health -->
+          <div class="metric-card">
+            <div class="card-icon green-glow">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div class="card-content">
+              <h3>System Health</h3>
+              <div class="large-value text-success" id="dashHealth">HEALTHY</div>
+              <p class="card-detail" id="dashUptime">Uptime: 0s</p>
+            </div>
+          </div>
+
+          <!-- Card 4: Redis Cache -->
+          <div class="metric-card">
+            <div class="card-icon purple-glow">
+              <i class="fa-solid fa-database"></i>
+            </div>
+            <div class="card-content">
+              <h3>Redis Status</h3>
+              <div class="large-value" id="dashRedis">DISCONNECTED</div>
+              <p class="card-detail" id="dashRedisVer">Version: unknown</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Content Grid -->
+        <div class="dashboard-grid">
+          <div class="content-panel info-panel">
+            <h3><i class="fa-solid fa-graduation-cap"></i> Interactive Deployment Playground</h3>
+            <p>Welcome to the Kubernetes deployment simulation and telemetry suite. This application is designed to demonstrate zero-downtime Blue-Green switches and weight-split Canary rollouts.</p>
+            
+            <div class="learning-steps">
+              <div class="step-item">
+                <div class="step-num">1</div>
+                <div class="step-info">
+                  <h4>Configure Local vs. Real Mode</h4>
+                  <p>In <strong>Local Simulation Mode</strong> (enabled via sidebar), you can test traffic shifting directly in your browser. Disable it to query the live backend server.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">2</div>
+                <div class="step-info">
+                  <h4>Launch Traffic Simulator</h4>
+                  <p>Head to the <strong>Traffic Tester</strong> tab, adjust the Requests Per Second (RPS), choose an endpoint like <code>/ab-test</code>, and press <strong>Start Simulator</strong>.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">3</div>
+                <div class="step-info">
+                  <h4>Apply Kubernetes Operations</h4>
+                  <p>Open the <strong>K8s Playground</strong> tab to get interactive YAML files and commands to deploy this application to your K8s cluster and see the traffic split live!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-panel stats-summary">
+            <h3><i class="fa-solid fa-chart-pie"></i> Quick Stats</h3>
+            <div class="quick-stat-row">
+              <span>Total Requests Sent</span>
+              <strong id="dashTotalReq">0</strong>
+            </div>
+            <div class="quick-stat-row">
+              <span>Avg Latency</span>
+              <strong id="dashAvgLatency">0 ms</strong>
+            </div>
+            <div class="quick-stat-row">
+              <span>Error Rate</span>
+              <strong class="text-success" id="dashErrorRate">0.00%</strong>
+            </div>
+            <div class="quick-stat-row">
+              <span>Counter Value</span>
+              <strong id="dashCounterVal">0</strong>
+            </div>
+            <div class="button-group" style="margin-top: 1.5rem;">
+              <button class="btn btn-secondary" id="btnResetCounter">
+                <i class="fa-solid fa-rotate-left"></i> Reset Server Counter
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: TRAFFIC TESTER -->
+      <section class="tab-panel" id="simulator-tab">
+        <div class="simulator-container">
+          <!-- Control Panel -->
+          <div class="content-panel controls-card">
+            <h3><i class="fa-solid fa-sliders"></i> Simulator Controls</h3>
+            
+            <div class="control-group">
+              <label for="rpsSlider">Requests Per Second (RPS): <span id="rpsVal">5</span></label>
+              <input type="range" id="rpsSlider" min="1" max="20" value="5" class="slider-input">
+            </div>
+
+            <div class="control-group">
+              <label for="endpointSelect">Target API Endpoint</label>
+              <select id="endpointSelect" class="form-select">
+                <option value="/ab-test">/ab-test (Simulates Canary Performance Differentials)</option>
+                <option value="/counter/increment">/counter/increment (Write-Heavy Redis Counter)</option>
+                <option value="/health">/health (Basic Pod Metadata / Health Check)</option>
+              </select>
+            </div>
+
+            <!-- Canary Mock Simulator Configuration (Visible in Simulation Mode) -->
+            <div class="control-group simulation-only-ui hidden" id="mockConfigPanel">
+              <label for="mockStrategySelect">Mock Strategy</label>
+              <select id="mockStrategySelect" class="form-select">
+                <option value="blue">100% Blue Deployment (v1.0.0)</option>
+                <option value="green">100% Green Deployment (v2.0.0)</option>
+                <option value="canary-10">10% Canary (v2.0.0-canary) / 90% Stable (v1.0.0)</option>
+                <option value="canary-50">50% Canary (v2.0.0-canary) / 50% Stable (v1.0.0)</option>
+                <option value="failover">Simulate Pod Outage (40% Server Errors)</option>
+              </select>
+            </div>
+
+            <div class="simulator-actions">
+              <button class="btn btn-primary" id="btnToggleSimulator">
+                <i class="fa-solid fa-play"></i> Start Simulator
+              </button>
+              <button class="btn btn-danger" id="btnClearStats">
+                <i class="fa-solid fa-trash"></i> Reset Analytics
+              </button>
+            </div>
+
+            <div class="telemetry-subcard">
+              <div class="subcard-header">
+                <div class="pulse-indicator offline" id="simulatorPulse"></div>
+                <span id="simulatorStatusText">Simulator Standby</span>
+              </div>
+              <div class="subcard-body">
+                <div class="mini-stat">
+                  <span class="label">Requests Sent</span>
+                  <span class="value" id="statsReqCount">0</span>
+                </div>
+                <div class="mini-stat">
+                  <span class="label">Success Rate</span>
+                  <span class="value text-success" id="statsSuccessRate">100.0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Column -->
+          <div class="charts-column">
+            <!-- Top Charts Row -->
+            <div class="charts-row">
+              <!-- Chart 1: Color Distribution -->
+              <div class="content-panel chart-panel">
+                <h4><i class="fa-solid fa-circle-half-stroke"></i> Traffic Split (Color)</h4>
+                <div class="chart-wrapper">
+                  <canvas id="colorChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Chart 2: Pod Distribution -->
+              <div class="content-panel chart-panel">
+                <h4><i class="fa-solid fa-server"></i> Active Pod Load Balancing</h4>
+                <div class="chart-wrapper">
+                  <canvas id="podChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Chart Row -->
+            <div class="content-panel chart-panel latency-chart-panel">
+              <h4><i class="fa-solid fa-wave-square"></i> Real-time Performance & Latency</h4>
+              <div class="chart-wrapper-large">
+                <canvas id="latencyChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Log & Console -->
+        <div class="content-panel request-log-panel">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-terminal"></i> Live Request Log</h3>
+            <button class="btn btn-link btn-xs" id="btnClearLog">Clear Log</button>
+          </div>
+          <div class="log-console" id="logConsole">
+            <div class="log-row info-row">
+              <span class="time">[11:35:12]</span>
+              <span class="message">System dashboard operational. Ready to capture telemetry traffic...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: K8S PLAYGROUND GUIDE -->
+      <section class="tab-panel" id="playground-tab">
+        <div class="guide-container">
+          <!-- Navigation for guide sub-modes -->
+          <div class="guide-tabs">
+            <button class="guide-tab-btn active" data-guide="bg-guide">
+              <i class="fa-solid fa-shuffle"></i> Blue-Green Deployment
+            </button>
+            <button class="guide-tab-btn" data-guide="canary-guide">
+              <i class="fa-solid fa-feather"></i> Canary Rollout
+            </button>
+          </div>
+
+          <!-- Sub-Tab 1: Blue-Green Guide -->
+          <div class="guide-content active" id="bg-guide">
+            <div class="guide-grid">
+              <div class="instructions-panel">
+                <h3>Blue-Green Deployment Guide</h3>
+                <p>Blue-Green deployment is a technique that reduces downtime and risk by running two identical production environments, only one of which (e.g. Blue) is active at any time.</p>
+                
+                <div class="walkthrough-steps">
+                  <div class="walkthrough-step">
+                    <h5><span>1</span> Start the Infrastructure</h5>
+                    <p>Apply the Redis service and colordeploy namespace first, followed by the original **Blue** version:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl apply -f k8s/common/namespac.yaml
+kubectl apply -f k8s/common/redis-deployment.yaml
+kubectl apply -f k8s/common/redis-service.yaml
+kubectl apply -f k8s/blue-green/deployment-blue.yaml
+kubectl apply -f k8s/blue-green/service.yaml</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>2</span> Spin Up Green Environment</h5>
+                    <p>Deploy the new, upgraded **Green** environment. At this point, the service is still targeting the Blue pods, allowing you to test Green in isolation:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl apply -f k8s/blue-green/deployment-green.yaml</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>3</span> Cutover Traffic</h5>
+                    <p>Start the **Traffic Tester** in the previous tab. Then, execute the switch by changing the service selector. Watch as 100% of your dashboard traffic instantly shifts to **Green** without dropping a single request!</p>
+                    <div class="code-block">
+                      <pre><code>kubectl patch service colordeploy-active-service -n colordeploy -p '{"spec":{"selector":{"color":"green"}}}'</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>4</span> Rollback (if necessary)</h5>
+                    <p>If something goes wrong, you can instantly rollback to the Blue version by pointing the selector back:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl patch service colordeploy-active-service -n colordeploy -p '{"spec":{"selector":{"color":"blue"}}}'</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yaml-panel">
+                <h3>Manifest Configuration</h3>
+                <div class="yaml-header">
+                  <span>k8s/blue-green/service.yaml</span>
+                </div>
+                <div class="yaml-code">
+                  <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: colordeploy-active-service
+  namespace: colordeploy
+spec:
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: colordeploy
+    color: blue # <--- Swap this to "green" to switch environments!</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Canary Guide -->
+          <div class="guide-content" id="canary-guide">
+            <div class="guide-grid">
+              <div class="instructions-panel">
+                <h3>Canary Deployment Guide</h3>
+                <p>A canary deployment consists of routing a small fraction of traffic to a new version (canary) to verify its performance and stability before rolling it out to 100% of users.</p>
+                
+                <div class="walkthrough-steps">
+                  <div class="walkthrough-step">
+                    <h5><span>1</span> Establish the Stable Base</h5>
+                    <p>Deploy the stable production pods (9 replicas) and the shared Canary service:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl apply -f k8s/common/namespac.yaml
+kubectl apply -f k8s/common/redis-deployment.yaml
+kubectl apply -f k8s/common/redis-service.yaml
+kubectl apply -f k8s/canary/deployment-stable.yaml
+kubectl apply -f k8s/canary/service.yaml</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>2</span> Launch Canary Pod</h5>
+                    <p>Introduce the Canary version (1 replica). Because it has the matching label <code>app: colordeploy-canary</code>, the service routes ~10% of traffic to it:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl apply -f k8s/canary/deployment-canary.yaml</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>3</span> Verify Telemetry</h5>
+                    <p>Launch the **Traffic Tester**. Observe that roughly 10% of requests go to **Canary** (shown in yellow). Check the Latency and Error charts to verify the canary version is healthy!</p>
+                  </div>
+
+                  <div class="walkthrough-step">
+                    <h5><span>4</span> Final Promotion</h5>
+                    <p>If telemetry is clean, promote the new version completely by updating your stable deployment image and scaling down the canary pod:</p>
+                    <div class="code-block">
+                      <pre><code>kubectl set image deployment/colordeploy-stable app=colordeploy-app:v2.0.0 -n colordeploy
+kubectl scale deployment/colordeploy-canary --replicas=0 -n colordeploy</code></pre>
+                      <button class="btn-copy" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="yaml-panel">
+                <h3>Manifest Configuration</h3>
+                <div class="yaml-header">
+                  <span>k8s/canary/service.yaml</span>
+                </div>
+                <div class="yaml-code">
+                  <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: colordeploy-canary-service
+  namespace: colordeploy
+spec:
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: colordeploy-canary # <--- Selects BOTH stable and canary deployments!</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Custom Scripts -->
+  <script src="js/app.js"></script>
+</body>
+</html>
